@@ -1,5 +1,6 @@
 package com.example.synhub.groups.views
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -59,33 +61,38 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun Group(nav: NavHostController) {
-    val groupViewModel: GroupViewModel = viewModel()
+
+    val groupViewModel = sharedGroupViewModel(nav)
     val group by groupViewModel.group.collectAsState()
+
     LaunchedEffect(Unit) {
         groupViewModel.fetchLeaderGroup()
+        groupViewModel.fetchGroupMembers()
     }
 
-    Scaffold (
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color(0xFFFFFFFF),
+    Scaffold(
         topBar = {
             TopBar(
-                function = {
-                    nav.navigate("Home")
-                },
-                group?.name ?: "Grupo",
-                Icons.AutoMirrored.Filled.ArrowBack
+                function = { nav.navigate("Home") },
+                title = group?.name ?: "Grupo",
+                icon = Icons.AutoMirrored.Filled.ArrowBack
             )
         }
-    ){
-            innerPadding -> GroupScreen(modifier = Modifier.padding(innerPadding),
-        nav)
+    ) { innerPadding ->
+        GroupScreen(
+            modifier = Modifier.padding(innerPadding),
+            nav = nav,
+            groupViewModel = groupViewModel
+        )
     }
 }
 
 @Composable
-fun GroupScreen(modifier: Modifier, nav: NavHostController) {
-    val groupViewModel: GroupViewModel = viewModel()
+fun GroupScreen(
+    modifier: Modifier,
+    nav: NavHostController,
+    groupViewModel: GroupViewModel
+) {
 
     val group by groupViewModel.group.collectAsState()
     val haveGroup by groupViewModel.haveGroup.collectAsState()
@@ -93,7 +100,8 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
 
     val coroutineScope = rememberCoroutineScope()
     val showDialog = remember { mutableStateOf(false) }
-    val memberToDelete = remember { mutableStateOf<GroupMember?>(null) } // Reemplaza 'membersType' por el tipo real de tus miembros
+    val memberToDelete = remember { mutableStateOf<GroupMember?>(null) }
+    val showDeleteGroupDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         groupViewModel.fetchLeaderGroup()
@@ -146,10 +154,14 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                             Box(
                                 modifier = Modifier.width(10.dp)
                             )
+
                             val clipboardManager = LocalClipboardManager.current
+
                             IconButton(
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString(group?.code ?: ""))
+                                    clipboardManager.setText(
+                                        AnnotatedString(group?.code ?: "")
+                                    )
                                 }
                             ) {
                                 Icon(
@@ -158,8 +170,21 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                                     tint = Color(0xFF4A90E2)
                                 )
                             }
+
+                            IconButton(
+                                onClick = {
+                                    nav.navigate("Group/Edit")
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar grupo",
+                                    tint = Color(0xFF4A90E2)
+                                )
+                            }
                         }
                     }
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -175,7 +200,33 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                             modifier = Modifier.padding(16.dp)
                         )
                     }
+
+                    ElevatedButton(
+                        onClick = {
+                            showDeleteGroupDialog.value = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF44336)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+
+                        Box(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = "Eliminar grupo",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+
                 Column (
                     modifier = Modifier.padding(bottom = 26.dp),
                 ){
@@ -272,6 +323,7 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                 }
             }
         }
+
         if (showDialog.value && memberToDelete.value != null) {
             AlertDialog(
                 onDismissRequest = { showDialog.value = false },
@@ -300,6 +352,69 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                         memberToDelete.value = null
                     }) {
                         Text("Cancelar", color = Color.White)
+                    }
+                }
+            )
+        }
+
+        if (showDeleteGroupDialog.value) {
+
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteGroupDialog.value = false
+                },
+
+                title = {
+                    Text(
+                        text = "Eliminar grupo",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+
+                text = {
+                    Text(
+                        text = "¿Estás seguro de que deseas eliminar el grupo \"${group?.name}\"? Esta acción no se puede deshacer."
+                    )
+                },
+
+                confirmButton = {
+                    ElevatedButton(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF44336)
+                        ),
+                        onClick = {
+
+                            groupViewModel.deleteGroup { success ->
+
+                                if (success) {
+                                    showDeleteGroupDialog.value = false
+
+                                    groupViewModel.fetchLeaderGroup()
+                                    groupViewModel.fetchGroupMembers()
+                                }
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = "Eliminar",
+                            color = Color.White
+                        )
+                    }
+                },
+
+                dismissButton = {
+                    ElevatedButton(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1A4E85)
+                        ),
+                        onClick = {
+                            showDeleteGroupDialog.value = false
+                        }
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            color = Color.White
+                        )
                     }
                 }
             )
@@ -351,4 +466,13 @@ fun NoGroup(nav: NavHostController){
             }
         }
     }
+}
+
+@SuppressLint("UnrememberedGetBackStackEntry")
+@Composable
+fun sharedGroupViewModel(navController: NavHostController): GroupViewModel {
+    val parentEntry = remember {
+        navController.getBackStackEntry("Group")
+    }
+    return viewModel(parentEntry)
 }

@@ -9,6 +9,9 @@ import com.example.synhub.shared.model.client.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class GroupViewModel : ViewModel() {
     private val _group = MutableStateFlow<GroupResponse?>(null)
@@ -88,6 +91,57 @@ class GroupViewModel : ViewModel() {
         }
     }
 
+    fun createGroupWithImage(
+        name: String,
+        description: String,
+        image: MultipartBody.Part,
+        onResult: (Boolean) -> Unit
+    ) {
+
+        viewModelScope.launch {
+            try {
+
+                val nameBody =
+                    name.toRequestBody(
+                        "text/plain".toMediaType()
+                    )
+
+                val descriptionBody =
+                    description.toRequestBody(
+                        "text/plain".toMediaType()
+                    )
+
+                val response =
+                    RetrofitClient.groupWebService
+                        .createGroupWithImage(
+                            nameBody,
+                            descriptionBody,
+                            image
+                        )
+
+                if (response.isSuccessful && response.body() != null) {
+                    _group.value = response.body()
+                    _haveGroup.value = true
+                    onResult(true)
+                } else {
+                    android.util.Log.e(
+                        "GroupViewModel",
+                        "Error ${response.code()}: ${response.errorBody()?.string()}"
+                    )
+                    onResult(false)
+                }
+
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Error creando grupo",
+                    e
+                )
+                onResult(false)
+            }
+        }
+    }
+
     fun deleteGroupMember(memberId: Long) {
         viewModelScope.launch {
             try {
@@ -104,4 +158,100 @@ class GroupViewModel : ViewModel() {
         }
     }
 
+    fun deleteGroup(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.groupWebService.deleteGroup()
+
+                if (response.isSuccessful) {
+                    android.util.Log.d(
+                        "GroupViewModel",
+                        "Grupo eliminado correctamente"
+                    )
+
+                    _group.value = null
+                    _haveGroup.value = false
+                    _members.value = emptyList()
+
+                    onResult(true)
+                } else {
+                    android.util.Log.e(
+                        "GroupViewModel",
+                        "Error al eliminar grupo: ${response.code()}"
+                    )
+
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Excepción al eliminar grupo",
+                    e
+                )
+
+                onResult(false)
+            }
+        }
+    }
+
+    fun updateGroup(
+        name: String,
+        description: String,
+        image: MultipartBody.Part?,
+        onResult: (Boolean) -> Unit
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val nameBody =
+                    name.toRequestBody("text/plain".toMediaType())
+
+                val descriptionBody =
+                    description.toRequestBody("text/plain".toMediaType())
+
+                val response =
+                    RetrofitClient.groupWebService.updateGroup(
+                        nameBody,
+                        descriptionBody,
+                        image
+                    )
+
+                if (response.isSuccessful && response.body() != null) {
+
+                    val updatedGroup = response.body()!!
+
+                    _group.value = updatedGroup
+                    _haveGroup.value = true
+
+                    android.util.Log.d(
+                        "GroupViewModel",
+                        "Grupo actualizado correctamente: ${updatedGroup.name}"
+                    )
+
+                    onResult(true)
+
+                } else {
+
+                    android.util.Log.e(
+                        "GroupViewModel",
+                        "Error actualizando grupo: ${response.code()} - ${response.errorBody()?.string()}"
+                    )
+
+                    onResult(false)
+                }
+
+            } catch (e: Exception) {
+
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Excepción actualizando grupo",
+                    e
+                )
+
+                onResult(false)
+            }
+        }
+    }
 }
