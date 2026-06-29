@@ -8,4 +8,3 @@ data class GroupResponse(
     val code: String,
     val memberCount: Int
 )
-
