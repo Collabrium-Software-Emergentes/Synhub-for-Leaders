@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.synhub.analytics.views.AnalyticsAndReports
 import com.example.synhub.groups.views.CreateGroup
+import com.example.synhub.groups.views.EditGroup
 import com.example.synhub.groups.views.Group
 import com.example.synhub.groups.views.MemberDetails
 import com.example.synhub.groups.views.Members
@@ -40,6 +41,7 @@ fun Navigator(){
         // Grupos
         composable("Group") { Group(rememberScreen) }
         composable("Group/CreateGroup") { CreateGroup(rememberScreen) }
+        composable("Group/Edit") { EditGroup(rememberScreen) }
         composable("Group/Members") { Members(rememberScreen) }
         composable("Group/Member/{memberId}") { backStackEntry ->
             val memberId = backStackEntry.arguments?.getString("memberId")

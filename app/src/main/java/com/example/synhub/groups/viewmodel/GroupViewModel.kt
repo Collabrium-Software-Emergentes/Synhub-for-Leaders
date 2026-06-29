@@ -193,4 +193,65 @@ class GroupViewModel : ViewModel() {
             }
         }
     }
+
+    fun updateGroup(
+        name: String,
+        description: String,
+        image: MultipartBody.Part?,
+        onResult: (Boolean) -> Unit
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val nameBody =
+                    name.toRequestBody("text/plain".toMediaType())
+
+                val descriptionBody =
+                    description.toRequestBody("text/plain".toMediaType())
+
+                val response =
+                    RetrofitClient.groupWebService.updateGroup(
+                        nameBody,
+                        descriptionBody,
+                        image
+                    )
+
+                if (response.isSuccessful && response.body() != null) {
+
+                    val updatedGroup = response.body()!!
+
+                    _group.value = updatedGroup
+                    _haveGroup.value = true
+
+                    android.util.Log.d(
+                        "GroupViewModel",
+                        "Grupo actualizado correctamente: ${updatedGroup.name}"
+                    )
+
+                    onResult(true)
+
+                } else {
+
+                    android.util.Log.e(
+                        "GroupViewModel",
+                        "Error actualizando grupo: ${response.code()} - ${response.errorBody()?.string()}"
+                    )
+
+                    onResult(false)
+                }
+
+            } catch (e: Exception) {
+
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Excepción actualizando grupo",
+                    e
+                )
+
+                onResult(false)
+            }
+        }
+    }
 }
