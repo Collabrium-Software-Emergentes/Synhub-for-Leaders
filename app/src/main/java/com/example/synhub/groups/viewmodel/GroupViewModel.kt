@@ -158,4 +158,39 @@ class GroupViewModel : ViewModel() {
         }
     }
 
+    fun deleteGroup(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.groupWebService.deleteGroup()
+
+                if (response.isSuccessful) {
+                    android.util.Log.d(
+                        "GroupViewModel",
+                        "Grupo eliminado correctamente"
+                    )
+
+                    _group.value = null
+                    _haveGroup.value = false
+                    _members.value = emptyList()
+
+                    onResult(true)
+                } else {
+                    android.util.Log.e(
+                        "GroupViewModel",
+                        "Error al eliminar grupo: ${response.code()}"
+                    )
+
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Excepción al eliminar grupo",
+                    e
+                )
+
+                onResult(false)
+            }
+        }
+    }
 }

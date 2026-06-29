@@ -34,4 +34,7 @@ interface GroupWebService {
 
     @DELETE("groups/api/v1/leader/group/members/{memberId}")
     suspend fun deleteGroupMember(@Path("memberId") memberId: Long): Response<Void>
+
+    @DELETE("groups/api/v1/leader/group")
+    suspend fun deleteGroup(): Response<Void>
 }

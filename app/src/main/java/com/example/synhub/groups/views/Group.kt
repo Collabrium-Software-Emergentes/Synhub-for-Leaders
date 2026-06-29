@@ -93,7 +93,8 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
 
     val coroutineScope = rememberCoroutineScope()
     val showDialog = remember { mutableStateOf(false) }
-    val memberToDelete = remember { mutableStateOf<GroupMember?>(null) } // Reemplaza 'membersType' por el tipo real de tus miembros
+    val memberToDelete = remember { mutableStateOf<GroupMember?>(null) }
+    val showDeleteGroupDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         groupViewModel.fetchLeaderGroup()
@@ -160,6 +161,7 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                             }
                         }
                     }
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -175,7 +177,33 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                             modifier = Modifier.padding(16.dp)
                         )
                     }
+
+                    ElevatedButton(
+                        onClick = {
+                            showDeleteGroupDialog.value = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF44336)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+
+                        Box(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = "Eliminar grupo",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+
                 Column (
                     modifier = Modifier.padding(bottom = 26.dp),
                 ){
@@ -272,6 +300,7 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                 }
             }
         }
+
         if (showDialog.value && memberToDelete.value != null) {
             AlertDialog(
                 onDismissRequest = { showDialog.value = false },
@@ -300,6 +329,69 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                         memberToDelete.value = null
                     }) {
                         Text("Cancelar", color = Color.White)
+                    }
+                }
+            )
+        }
+
+        if (showDeleteGroupDialog.value) {
+
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteGroupDialog.value = false
+                },
+
+                title = {
+                    Text(
+                        text = "Eliminar grupo",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+
+                text = {
+                    Text(
+                        text = "¿Estás seguro de que deseas eliminar el grupo \"${group?.name}\"? Esta acción no se puede deshacer."
+                    )
+                },
+
+                confirmButton = {
+                    ElevatedButton(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF44336)
+                        ),
+                        onClick = {
+
+                            groupViewModel.deleteGroup { success ->
+
+                                if (success) {
+                                    showDeleteGroupDialog.value = false
+
+                                    groupViewModel.fetchLeaderGroup()
+                                    groupViewModel.fetchGroupMembers()
+                                }
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = "Eliminar",
+                            color = Color.White
+                        )
+                    }
+                },
+
+                dismissButton = {
+                    ElevatedButton(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1A4E85)
+                        ),
+                        onClick = {
+                            showDeleteGroupDialog.value = false
+                        }
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            color = Color.White
+                        )
                     }
                 }
             )
