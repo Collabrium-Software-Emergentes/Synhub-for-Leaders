@@ -1,5 +1,6 @@
 package com.example.synhub.groups.views
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -59,33 +61,38 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun Group(nav: NavHostController) {
-    val groupViewModel: GroupViewModel = viewModel()
+
+    val groupViewModel = sharedGroupViewModel(nav)
     val group by groupViewModel.group.collectAsState()
+
     LaunchedEffect(Unit) {
         groupViewModel.fetchLeaderGroup()
+        groupViewModel.fetchGroupMembers()
     }
 
-    Scaffold (
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color(0xFFFFFFFF),
+    Scaffold(
         topBar = {
             TopBar(
-                function = {
-                    nav.navigate("Home")
-                },
-                group?.name ?: "Grupo",
-                Icons.AutoMirrored.Filled.ArrowBack
+                function = { nav.navigate("Home") },
+                title = group?.name ?: "Grupo",
+                icon = Icons.AutoMirrored.Filled.ArrowBack
             )
         }
-    ){
-            innerPadding -> GroupScreen(modifier = Modifier.padding(innerPadding),
-        nav)
+    ) { innerPadding ->
+        GroupScreen(
+            modifier = Modifier.padding(innerPadding),
+            nav = nav,
+            groupViewModel = groupViewModel
+        )
     }
 }
 
 @Composable
-fun GroupScreen(modifier: Modifier, nav: NavHostController) {
-    val groupViewModel: GroupViewModel = viewModel()
+fun GroupScreen(
+    modifier: Modifier,
+    nav: NavHostController,
+    groupViewModel: GroupViewModel
+) {
 
     val group by groupViewModel.group.collectAsState()
     val haveGroup by groupViewModel.haveGroup.collectAsState()
@@ -147,15 +154,31 @@ fun GroupScreen(modifier: Modifier, nav: NavHostController) {
                             Box(
                                 modifier = Modifier.width(10.dp)
                             )
+
                             val clipboardManager = LocalClipboardManager.current
+
                             IconButton(
                                 onClick = {
-                                    clipboardManager.setText(AnnotatedString(group?.code ?: ""))
+                                    clipboardManager.setText(
+                                        AnnotatedString(group?.code ?: "")
+                                    )
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Share,
                                     contentDescription = "Copiar código",
+                                    tint = Color(0xFF4A90E2)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    nav.navigate("Group/Edit")
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar grupo",
                                     tint = Color(0xFF4A90E2)
                                 )
                             }
@@ -443,4 +466,13 @@ fun NoGroup(nav: NavHostController){
             }
         }
     }
+}
+
+@SuppressLint("UnrememberedGetBackStackEntry")
+@Composable
+fun sharedGroupViewModel(navController: NavHostController): GroupViewModel {
+    val parentEntry = remember {
+        navController.getBackStackEntry("Group")
+    }
+    return viewModel(parentEntry)
 }
