@@ -69,6 +69,57 @@ class GroupViewModel : ViewModel() {
         }
     }
 
+    fun fetchGroupByCode(
+        code: String
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val response =
+                    RetrofitClient
+                        .groupWebService
+                        .getGroupByCode(code)
+
+                if (
+                    response.isSuccessful &&
+                    response.body() != null
+                ) {
+
+                    val group =
+                        response.body()!!
+
+                    _group.value = group
+                    _haveGroup.value = true
+
+                } else if (
+                    response.code() == 404
+                ) {
+
+                    _group.value = null
+                    _haveGroup.value = false
+
+                } else {
+
+                    _group.value = null
+                    _haveGroup.value = false
+                }
+
+            } catch (e: Exception) {
+
+                _group.value = null
+                _haveGroup.value = false
+
+                android.util.Log.e(
+                    "GroupViewModel",
+                    "Error al buscar grupo por código",
+                    e
+                )
+            }
+        }
+    }
+
     fun createGroup(groupRequest: GroupRequest, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {

@@ -60,13 +60,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun Group(nav: NavHostController) {
+fun Group(
+    nav: NavHostController,
+    groupCode: String? = null
+) {
 
     val groupViewModel = sharedGroupViewModel(nav)
     val group by groupViewModel.group.collectAsState()
 
-    LaunchedEffect(Unit) {
-        groupViewModel.fetchLeaderGroup()
+    LaunchedEffect(groupCode) {
+
+        if(groupCode != null){
+
+            groupViewModel.fetchGroupByCode(
+                groupCode
+            )
+
+        } else {
+
+            groupViewModel.fetchLeaderGroup()
+        }
         groupViewModel.fetchGroupMembers()
     }
 
@@ -102,11 +115,6 @@ fun GroupScreen(
     val showDialog = remember { mutableStateOf(false) }
     val memberToDelete = remember { mutableStateOf<GroupMember?>(null) }
     val showDeleteGroupDialog = remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        groupViewModel.fetchLeaderGroup()
-        groupViewModel.fetchGroupMembers()
-    }
 
     Box(modifier = Modifier.fillMaxSize()){
         Column (
@@ -470,9 +478,15 @@ fun NoGroup(nav: NavHostController){
 
 @SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
-fun sharedGroupViewModel(navController: NavHostController): GroupViewModel {
+fun sharedGroupViewModel(
+    navController: NavHostController
+): GroupViewModel {
+
     val parentEntry = remember {
-        navController.getBackStackEntry("Group")
+        navController.getBackStackEntry(
+            "group_graph"
+        )
     }
+
     return viewModel(parentEntry)
 }
