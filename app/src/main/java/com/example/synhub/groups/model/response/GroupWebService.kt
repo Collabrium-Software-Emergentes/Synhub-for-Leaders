@@ -14,6 +14,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface GroupWebService {
     @GET("groups/api/v1/leader/group")
@@ -21,6 +22,12 @@ interface GroupWebService {
 
     @GET("groups/api/v1/groups/members")
     suspend fun getGroupMembers(): Response<List<GroupMember>>
+
+    @GET("groups/api/v1/groups/search")
+    suspend fun getGroupByCode(
+        @Query("code")
+        code: String
+    ): Response<GroupResponse>
 
     @POST("groups/api/v1/leader/group")
     suspend fun createGroup(@Body groupRequest: GroupRequest): Response<GroupResponse>
